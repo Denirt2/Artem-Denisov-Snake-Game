@@ -11,6 +11,7 @@ from SnakeHead import SnakeHead
 from SnakeHead import SnakeHeadEasy
 from Fruit import Fruit
 from Fruit import BadApple
+from Fruit import GoldenApple
 from SnakeBody import SnakeBody
 from GUI import SquareImage
 from GUI import DeadBlock
@@ -27,11 +28,19 @@ def start_game(nickname, difficulty):
     display = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Змейка")
 
+    # Клетки поля
+    board_squres = list()
+    for i in range(20):
+        board_squres.append(list())
+        for j in range(20):
+            board_squres[i].append(0)
+
     # Некоторые переменные
     game_folder = os.path.dirname(__file__)
     img_folder = os.path.join(game_folder, 'images')
     all_sprites = pygame.sprite.Group()
     fruits = pygame.sprite.Group()
+    bad_apples = pygame.sprite.Group()
     bodies = pygame.sprite.Group()
     blocks = pygame.sprite.Group()
     clock = pygame.time.Clock()
@@ -44,6 +53,7 @@ def start_game(nickname, difficulty):
     head_color = (75, 0, 130)  # Indigo
     fruit_color = (178, 34, 34)  # FireBrick
     bad_apple_color = (128, 128, 0)  # Olive
+    golden_apple_color = (255, 215, 0) #Gold
     screen_color = (70, 130, 180)  # SteelBlue
     body_color_first = (186, 85, 211)  # MediumOrchid
     body_color_second = (138, 43, 226)  # BlueViolet
@@ -69,6 +79,11 @@ def start_game(nickname, difficulty):
         dead_block_2 = DeadBlock(block_color, (30, 180), (width - margin - 60, margin + 90))
         dead_block_3 = DeadBlock(block_color, (180, 30), (margin + 90, margin + 30))
         dead_block_4 = DeadBlock(block_color, (180, 30), (margin + 90, height - margin - 60))
+        for i in range(margin // 30 + 3, (width - margin) // 30 - 3):
+            board_squres[margin // 30 + 1][i] = 1
+            board_squres[(height - margin) // 30 - 2][i] = 1
+            board_squres[i][margin // 30 + 1] = 1
+            board_squres[i][(width - margin) // 30 - 2] = 1
         blocks.add(dead_block_1)
         blocks.add(dead_block_2)
         blocks.add(dead_block_3)
@@ -102,38 +117,62 @@ def start_game(nickname, difficulty):
 
         # Генерация фруктов (Сложность 3+ Генерация "Испорченных яблок")
         def create_fruit():
-            new_fruit = Fruit(fruit_color, plain)
+            coords = (random.randint(4, 15), random.randint(4, 15))
+            while board_squres[coords[0]][coords[1]] == 1:
+                coords = (random.randint(4, 15), random.randint(4, 15))
+            new_fruit = Fruit(fruit_color, plain, coords)
             fruits.add(new_fruit)
             all_sprites.add(new_fruit)
 
         def create_bad_apple():
-            new_bad_apple = BadApple(bad_apple_color, plain)
-            fruits.add(new_bad_apple)
-            all_sprites.add((new_bad_apple))
+            coords = (random.randint(4, 15), random.randint(4, 15))
+            while board_squres[coords[0]][coords[1]] == 1:
+                coords = (random.randint(4, 15), random.randint(4, 15))
+            new_bad_apple = BadApple(bad_apple_color, plain, coords)
+            bad_apples.add(new_bad_apple)
+            all_sprites.add(new_bad_apple)
+
+        def create_golden_apple():
+            coords = (random.randint(4, 15), random.randint(4, 15))
+            while board_squres[coords[0]][coords[1]] == 1:
+                coords = (random.randint(4, 15), random.randint(4, 15))
+            new_golden_apple = GoldenApple(golden_apple_color, plain, coords)
+            fruits.add(new_golden_apple)
+            all_sprites.add(new_golden_apple)
 
         # Проверка на создание фрукта
         if (random.randint(0, 670) <= 2 and len(fruits) < 4) or len(fruits) == 0:
-            if difficulty.get_value()[1] < 2:
-                create_fruit()
+            if random.randint(0, 100) < 15:
+                create_golden_apple()
             else:
-                if difficulty.get_value()[1] == 2:
-                    if random.randint(0, 100) < 80:
-                        create_fruit()
-                    else:
-                        create_bad_apple()
-                if difficulty.get_value()[1] == 3:
-                    if random.randint(0, 100) < 75:
-                        create_fruit()
-                    else:
-                        create_bad_apple()
-                if difficulty.get_value()[1] == 4:
-                    if random.randint(0, 100) < 70:
-                        create_fruit()
-                    else:
-                        create_bad_apple()
+                create_fruit()
+
+        # Проверка на создание плохого фрукта
+        if difficulty.get_value()[1] == 2 and random.randint(0, 670) <= 2:
+            if len(bad_apples) == 0:
+                create_bad_apple()
+        elif difficulty.get_value()[1] == 3 and random.randint(0, 670) <= 2:
+            if len(bad_apples) <= 1:
+                create_bad_apple()
+        elif difficulty.get_value()[1] == 4 and random.randint(0, 670) <= 2:
+            if len(bad_apples) <= 2:
+                create_bad_apple()
 
         # Съедание фрукта
         for i in fruits:
+            if i.InHitbox(head.rect.center):
+                score_point += i.GetScore()
+                i.kill()
+                if len(bodies) % 2 == 1:
+                    new_body = SnakeBody(body_color_second, last_body, head)
+                else:
+                    new_body = SnakeBody(body_color_first, last_body, head)
+                last_body = new_body
+                bodies.add(new_body)
+                all_sprites.add(new_body)
+
+        # Съедание плохого фрукта
+        for i in bad_apples:
             if i.InHitbox(head.rect.center):
                 score_point += i.GetScore()
                 i.kill()
