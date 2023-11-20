@@ -1,20 +1,12 @@
-# Библиотеки, необходима установка
-import pygame
-import pygame_menu
-
-# Библиотеки
-import random
-import os
-
-# Собственные файлы
-from SnakeHead import SnakeHead
-from SnakeHead import SnakeHeadEasy
-from Fruit import Fruit
-from Fruit import BadApple
-from Fruit import GoldenApple
-from SnakeBody import SnakeBody
-from GUI import SquareImage
-from GUI import DeadBlock
+from src.config import *
+from src.fruit import Fruit
+from src.fruit import BadApple
+from src.fruit import GoldenApple
+from src.GUI import SquareImage
+from src.GUI import DeadBlock
+from src.snake_body import SnakeBody
+from src.snake_head import SnakeHead
+from src.snake_head import SnakeHeadEasy
 
 
 # Запуск самой игры
@@ -27,6 +19,14 @@ def start_game(nickname, difficulty):
     FPS = 30
     display = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Змейка")
+    font = pygame.font.SysFont('courier', 36)
+
+    # Группы спрайтов
+    all_sprites = pygame.sprite.Group()
+    fruits = pygame.sprite.Group()
+    bad_apples = pygame.sprite.Group()
+    bodies = pygame.sprite.Group()
+    blocks = pygame.sprite.Group()
 
     # Клетки поля
     board_squres = list()
@@ -34,31 +34,6 @@ def start_game(nickname, difficulty):
         board_squres.append(list())
         for j in range(20):
             board_squres[i].append(0)
-
-    # Некоторые переменные
-    game_folder = os.path.dirname(__file__)
-    img_folder = os.path.join(game_folder, 'images')
-    all_sprites = pygame.sprite.Group()
-    fruits = pygame.sprite.Group()
-    bad_apples = pygame.sprite.Group()
-    bodies = pygame.sprite.Group()
-    blocks = pygame.sprite.Group()
-    clock = pygame.time.Clock()
-    font = pygame.font.SysFont('courier', 36)
-
-    # Используемые изображения
-    board_image = pygame.image.load(os.path.join(img_folder, 'Board.png'))
-
-    # Используемые цвета
-    head_color = (75, 0, 130)  # Indigo
-    fruit_color = (178, 34, 34)  # FireBrick
-    bad_apple_color = (128, 128, 0)  # Olive
-    golden_apple_color = (255, 215, 0) #Gold
-    screen_color = (70, 130, 180)  # SteelBlue
-    body_color_first = (186, 85, 211)  # MediumOrchid
-    body_color_second = (138, 43, 226)  # BlueViolet
-    text_color = (0, 0, 0)  # Black
-    block_color = (139, 69, 19)  # SaddleBrown
 
     # Задний фон
     display.fill(screen_color)
@@ -74,7 +49,7 @@ def start_game(nickname, difficulty):
     all_sprites.add(head)
 
     # Сложность 4+ - обалвяем так же стены
-    def create_walls():
+    if difficulty.get_value()[1] >= 3:
         dead_block_1 = DeadBlock(block_color, (30, 180), (margin + 30, margin + 90))
         dead_block_2 = DeadBlock(block_color, (30, 180), (width - margin - 60, margin + 90))
         dead_block_3 = DeadBlock(block_color, (180, 30), (margin + 90, margin + 30))
@@ -89,9 +64,6 @@ def start_game(nickname, difficulty):
         blocks.add(dead_block_3)
         blocks.add(dead_block_4)
         all_sprites.add(blocks)
-
-    if difficulty.get_value()[1] >= 3:
-        create_walls()
 
     # Сложность 5 - Змейка изначально с максимальной скоростью
     if difficulty.get_value()[1] == 4:
@@ -160,7 +132,7 @@ def start_game(nickname, difficulty):
 
         # Съедание фрукта
         for i in fruits:
-            if i.InHitbox(head.rect.center):
+            if i.in_hitbox(head.rect.center):
                 score_point += i.GetScore()
                 i.kill()
                 if len(bodies) % 2 == 1:
@@ -173,7 +145,7 @@ def start_game(nickname, difficulty):
 
         # Съедание плохого фрукта
         for i in bad_apples:
-            if i.InHitbox(head.rect.center):
+            if i.in_hitbox(head.rect.center):
                 score_point += i.GetScore()
                 i.kill()
                 if len(bodies) % 2 == 1:
@@ -192,7 +164,7 @@ def start_game(nickname, difficulty):
         # Проверка, врезалась ли змейка в стену (Сложность 4+)
         if difficulty.get_value()[1] >= 3:
             for block in blocks:
-                if block.InHitbox(head):
+                if block.in_hitbox(head):
                     head.is_live = False
 
         if not head.is_live:
@@ -219,7 +191,7 @@ def top_players():
     display_scores = pygame.display.set_mode((600, 600))
     scores_menu = pygame_menu.Menu("Таблица лидеров", 600, 600, theme=pygame_menu.themes.THEME_SOLARIZED)
     scores_menu.add.button("Назад", main_menu)
-    with open("scores.txt", 'r') as file:
+    with open("src/scores.txt", 'r') as file:
         lines = file.readlines()
         results = list()
         for i in range(0, len(lines) // 2):
@@ -236,7 +208,7 @@ def top_players():
 # Запись счёта в файл
 def write_score(nickname, score_point):
     # Запись счёта
-    with open('scores.txt', 'r') as file:
+    with open('src/scores.txt', 'r') as file:
         already_in = False
         for line in file:
             if already_in:
@@ -244,17 +216,17 @@ def write_score(nickname, score_point):
                 break
             if nickname.get_value() + '\n' == line:
                 already_in = True
-    with open('scores.txt', 'r') as file:
+    with open('src/scores.txt', 'r') as file:
         old_data = file.read()
     if already_in:
         score_point = max(score_point, int(old_score))
         new_data = old_data.replace(nickname.get_value() + "\n" + old_score,
                                     nickname.get_value() + "\n" + str(score_point) + "\n", 1)
-        with open('scores.txt', 'w') as file:
+        with open('src/scores.txt', 'w') as file:
             file.write(new_data)
     else:
         new_data = nickname.get_value() + "\n" + str(score_point) + "\n"
-        with open('scores.txt', 'a') as file:
+        with open('src/scores.txt', 'a') as file:
             file.write(new_data)
 
 

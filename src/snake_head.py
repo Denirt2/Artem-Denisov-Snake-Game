@@ -1,10 +1,10 @@
-# Библиотеки
 import pygame
+from pygame.sprite import Sprite
 
 
-class SnakeHead(pygame.sprite.Sprite):
+class SnakeHead(Sprite):
     def __init__(self, color, plain):
-        pygame.sprite.Sprite.__init__(self)
+        super().__init__()
 
         # Переменные класса
         self.image = pygame.Surface((30, 30))
