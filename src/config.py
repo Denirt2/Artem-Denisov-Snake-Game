@@ -1,8 +1,6 @@
 import os
-import random
 
 import pygame
-import pygame_menu
 
 # Некоторые переменные
 game_folder = os.path.dirname(__file__)

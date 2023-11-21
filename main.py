@@ -1,12 +1,10 @@
+import random
+import pygame_menu
 from src.config import *
-from src.fruit import Fruit
-from src.fruit import BadApple
-from src.fruit import GoldenApple
-from src.GUI import SquareImage
-from src.GUI import DeadBlock
+from src.fruit import BadApple, Fruit, GoldenApple
+from src.GUI import DeadBlock, SquareImage
 from src.snake_body import SnakeBody
-from src.snake_head import SnakeHead
-from src.snake_head import SnakeHeadEasy
+from src.snake_head import SnakeHead, SnakeHeadEasy
 
 
 # Запуск самой игры
